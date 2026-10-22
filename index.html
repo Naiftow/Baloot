@@ -362,7 +362,10 @@ document.addEventListener('change',e=>{
   const pe=e.target.closest('[data-act="period"]');if(pe){period=pe.value;render()}
   const ts=e.target.closest('[data-act="tsel"]');if(ts){tm[+ts.dataset.i]=ts.value}
 });
-document.addEventListener('input',e=>{if(e.target.id==='tg')setup.target=parseInt(e.target.value)||152});
+document.addEventListener('input',e=>{
+  const id=e.target.id;
+  if((id==='ia'||id==='ea')&&e.target.value.length>=2){const n=$(id==='ia'?'#ib':'#eb');if(n){n.focus();try{n.select()}catch(err){}}}
+});
 $('#who').addEventListener('click',()=>{tab='who';render()});
 
 firebase.initializeApp({
