@@ -63,6 +63,14 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 4px;t
 .half b{font-size:clamp(30px,10.5vw,46px);line-height:1;font-weight:800}
 .cir small{font-size:11px;opacity:.92;line-height:1.3;margin:2px 0}
 .flip{transform:rotate(180deg)}
+.board{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tm{background:linear-gradient(160deg,var(--g),#164d32);color:#fff;border-radius:18px;padding:10px;text-align:center}
+.tm.lead{outline:3px solid var(--acc)}
+.tp{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 0}
+.tp.flip{transform:rotate(180deg);border-bottom:1px solid rgba(255,255,255,.25)}
+.tp small{font-size:12px;opacity:.9;line-height:1.3;min-height:16px}
+.tp b{font-size:42px;line-height:1.1;font-weight:800}
+.tm .bar{height:6px;background:rgba(255,255,255,.25);border-radius:9px;margin-top:6px;overflow:hidden}.tm .bar i{display:block;height:100%;background:var(--acc)}
 </style>
 
 </head>
@@ -138,13 +146,19 @@ function whoView(){
 
 function setupView(){
   const opt=v=>`<option value="">— اختر —</option>`+players.map(p=>`<option ${p===v?'selected':''}>${esc(p)}</option>`).join('');
-  if(!nextSetup&&!setup.p[0]&&me)setup.p[0]=me;
+  if(!setup.pre){
+    setup.pre=true;
+    const lg=[...games].sort((x,y)=>y.ts-x.ts)[0];
+    if(nextSetup&&live&&live.finished){const A=live.win==='A';setup.p=[...(A?live.a:live.b),...(A?live.b:live.a)];setup.cont=true}
+    else if(lg){const A=lg.winner==='A';setup.p=[...(A?lg.a:lg.b),...(A?lg.b:lg.a)];setup.cont=true}
+    else if(me)setup.p[0]=me;
+  }
   const sel=i=>`<select data-act="sel" data-i="${i}">${opt(setup.p[i])}</select>`;
   const nx=nextSetup&&live&&live.finished;
-  return `<div class="card"><h2>${nx?'صكة جديدة، الفريق الفايز مستمر':'صكة جديدة'}</h2>
-  <div class="team"><label>${nx?'الفريق الفايز':'الفريق الأول'}</label>${sel(0)}${sel(1)}</div>
+  return `<div class="card"><h2>صكة جديدة</h2>${setup.cont?'<p class="note">الفريق الفايز مستمر، غيّر المتحدين لو تبغى</p>':''}
+  <div class="team"><label>${setup.cont?'الفريق الفايز (مستمر)':'الفريق الأول'}</label>${sel(0)}${sel(1)}</div>
   <div class="vs">ضد</div>
-  <div class="team"><label>${nx?'الفريق المتحدي':'الفريق الثاني'}</label>${sel(2)}${sel(3)}</div>
+  <div class="team"><label>${setup.cont?'الفريق المتحدي':'الفريق الثاني'}</label>${sel(2)}${sel(3)}</div>
   <button class="btn gold" data-act="start">ابدأ الصكة</button>
   ${nx?'<button class="btn alt" data-act="back" style="margin-top:8px">رجوع</button>':''}</div>
   <div class="card"><h2>اللاعبين</h2><div class="chips">${players.map(p=>`<span class="who">${esc(p)}</span>`).join('')}</div>
@@ -154,8 +168,8 @@ function setupView(){
 const tot=o=>{const r=(o&&o.rounds)||[];return [r.reduce((s,x)=>s+x.a,0),r.reduce((s,x)=>s+x.b,0)]};
 function board(sa,sb){
   const t=live.target;
-  const c=(n,s,l)=>{const h=`<small>${tn(n)}</small><b>${s}</b>`;return `<div class="cir ${l?'lead':''}" style="--p:${Math.min(100,s/t*100)}%"><div class="in"><div class="half flip">${h}</div><div class="half">${h}</div></div></div>`};
-  return `<div class="bd">${c(live.a,sa,sa>sb)}${c(live.b,sb,sb>sa)}</div>`;
+  const c=(n,s,l)=>{const h=`<small>${tn(n)}</small><b>${s}</b>`;return `<div class="tm ${l?'lead':''}"><div class="tp flip">${h}</div><div class="tp">${h}</div><div class="bar"><i style="width:${Math.min(100,s/t*100)}%"></i></div></div>`};
+  return `<div class="board">${c(live.a,sa,sa>sb)}${c(live.b,sb,sb>sa)}</div>`;
 }
 function liveView(){
   const [sa,sb]=sums(),r=live.rounds||[],fin=!!live.finished,own=live.owner===devId;
@@ -172,7 +186,7 @@ function liveView(){
   let mid;
   if(fin){
     const w=live.win==='A'?live.a:live.b;
-    mid=`<div class="card" style="text-align:center"><h2>🏆 فاز ${tn(w)}</h2><div class="note">${sa} - ${sb}</div>${own?`<div class="row" style="margin-top:10px"><button class="btn alt" data-act="undo">↩ تراجع</button><button class="btn gold" data-act="next">صكة جديدة</button></div>`:''}</div>`;
+    mid=`<div class="card" style="text-align:center"><h2>🏆 فاز ${tn(w)}</h2><div class="note">${sa} - ${sb}</div><div class="row" style="margin-top:10px">${own?'<button class="btn alt" data-act="undo">↩ تراجع</button>':''}<button class="btn gold" data-act="next">صكة جديدة، الفايز مستمر</button></div></div>`;
   }else if(own){
     mid=`<div class="card"><h2>مشترى جديد</h2><div class="row"><input id="ia" type="number" inputmode="numeric" placeholder="لنا"><input id="ib" type="number" inputmode="numeric" placeholder="لهم"></div><button class="btn" style="margin-top:10px" data-act="round">سجّل المشترى</button></div>`;
   }else{
@@ -270,12 +284,11 @@ document.addEventListener('click',async e=>{
     const p=setup.p;editIdx=-1;
     if(p.some(x=>!x)||new Set(p).size<4)return alert('اختر 4 لاعبين مختلفين');
     await saveLive({active:true,finished:false,gid:Date.now(),owner:devId,a:[p[0],p[1]],b:[p[2],p[3]],target:152,rounds:[],gameId:null,win:null});
-    nextSetup=false;setup={p:['','','',''],target:152};
+    nextSetup=false;setup={p:['','','',''],target:152,pre:false,cont:false};
   }
   else if(a==='next'){
-    if(!isOwner()||!live.finished)return;
-    const w=live.win==='A'?live.a:live.b;
-    setup.p=[w[0],w[1],'',''];nextSetup=true;render();
+    if(!live||!live.finished)return;
+    setup={p:['','','',''],target:152,pre:false,cont:false};nextSetup=true;render();
   }
   else if(a==='back'){nextSetup=false;render()}
   else if(a==='take'){if(confirm('تسجل النتايج من هذا الجهاز؟'))await saveLive({...live,owner:devId})}
