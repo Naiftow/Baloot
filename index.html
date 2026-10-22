@@ -71,6 +71,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 4px;t
 .tp small{font-size:12px;opacity:.9;line-height:1.3;min-height:16px}
 .tp b{font-size:42px;line-height:1.1;font-weight:800}
 .tm .bar{height:6px;background:rgba(255,255,255,.25);border-radius:9px;margin-top:6px;overflow:hidden}.tm .bar i{display:block;height:100%;background:var(--acc)}
+.tm{padding:14px}
+.tm small{display:block;opacity:.85;font-size:13px;min-height:36px;line-height:1.3}
+.tm b{display:block;font-size:46px;line-height:1.1;margin-top:4px;font-weight:800}
 </style>
 
 </head>
@@ -168,8 +171,8 @@ function setupView(){
 const tot=o=>{const r=(o&&o.rounds)||[];return [r.reduce((s,x)=>s+x.a,0),r.reduce((s,x)=>s+x.b,0)]};
 function board(sa,sb){
   const t=live.target;
-  const c=(n,s,l)=>{const h=`<small>${tn(n)}</small><b>${s}</b>`;return `<div class="cir ${l?'lead':''}" style="--p:${Math.min(100,s/t*100)}%"><div class="in"><div class="half flip">${h}</div><div class="half">${h}</div></div></div>`};
-  return `<div class="bd">${c(live.a,sa,sa>sb)}${c(live.b,sb,sb>sa)}</div>`;
+  const c=(n,s,l)=>`<div class="tm ${l?'lead':''}"><small>${tn(n)}</small><b>${s}</b><div class="bar"><i style="width:${Math.min(100,s/t*100)}%"></i></div></div>`;
+  return `<div class="board">${c(live.a,sa,sa>sb)}${c(live.b,sb,sb>sa)}</div>`;
 }
 function liveView(){
   const [sa,sb]=sums(),r=live.rounds||[],fin=!!live.finished,own=live.owner===devId;
