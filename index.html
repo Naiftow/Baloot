@@ -168,8 +168,8 @@ function setupView(){
 const tot=o=>{const r=(o&&o.rounds)||[];return [r.reduce((s,x)=>s+x.a,0),r.reduce((s,x)=>s+x.b,0)]};
 function board(sa,sb){
   const t=live.target;
-  const c=(n,s,l)=>{const h=`<small>${tn(n)}</small><b>${s}</b>`;return `<div class="tm ${l?'lead':''}"><div class="tp flip">${h}</div><div class="tp">${h}</div><div class="bar"><i style="width:${Math.min(100,s/t*100)}%"></i></div></div>`};
-  return `<div class="board">${c(live.a,sa,sa>sb)}${c(live.b,sb,sb>sa)}</div>`;
+  const c=(n,s,l)=>{const h=`<small>${tn(n)}</small><b>${s}</b>`;return `<div class="cir ${l?'lead':''}" style="--p:${Math.min(100,s/t*100)}%"><div class="in"><div class="half flip">${h}</div><div class="half">${h}</div></div></div>`};
+  return `<div class="bd">${c(live.a,sa,sa>sb)}${c(live.b,sb,sb>sa)}</div>`;
 }
 function liveView(){
   const [sa,sb]=sums(),r=live.rounds||[],fin=!!live.finished,own=live.owner===devId;
@@ -250,13 +250,27 @@ async function setMe(n){me=n;try{localStorage.setItem('baloot_me',n)}catch(e){}t
 async function saveLive(o){try{await db.doc('live/current').set(o)}catch(e){alert('تعذر الحفظ، تأكد من الإنترنت')}}
 
 const isOwner=()=>live&&live.owner===devId;
+const ON=['صفر','واحد','اثنين','ثلاثة','أربعة','خمسة','ستة','سبعة','ثمانية','تسعة','عشرة','أحد عشر','اثنا عشر','ثلاثة عشر','أربعة عشر','خمسة عشر','ستة عشر','سبعة عشر','ثمانية عشر','تسعة عشر'];
+const TN=['','','عشرين','ثلاثين','أربعين','خمسين','ستين','سبعين','ثمانين','تسعين'];
+function n2w(n){
+  if(n<20)return ON[n];
+  if(n<100){const o=n%10,t=Math.floor(n/10);return o?ON[o]+' و'+TN[t]:TN[t]}
+  if(n<300){const h=n<200?'مية':'ميتين',r=n%100;return r?h+' و'+n2w(r):h}
+  return String(n);
+}
+function pickVoice(){
+  const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.toLowerCase().replace('_','-').startsWith('ar'));
+  const sc=v=>{const n=(v.name||'').toLowerCase(),l=v.lang.toLowerCase().replace('_','-');let k=0;
+    if(l==='ar-sa')k+=10;if(/premium/.test(n))k+=6;if(/enhanced/.test(n))k+=4;if(/majed|maged|hamed|zuhair|tarik/.test(n))k+=2;return k};
+  return vs.sort((a,b)=>sc(b)-sc(a))[0];
+}
 function speak(t){
   if(!snd||!('speechSynthesis' in window))return;
   try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ar-SA';
-    const v=speechSynthesis.getVoices().find(x=>x.lang&&x.lang.toLowerCase().startsWith('ar'));if(v)u.voice=v;
-    u.rate=0.95;speechSynthesis.speak(u)}catch(e){}
+    const v=pickVoice();if(v)u.voice=v;
+    u.rate=1;u.pitch=1;speechSynthesis.speak(u)}catch(e){}
 }
-const say=o=>{const [x,y]=tot(o);return 'لنا '+x+'، ولهم '+y};
+const say=o=>{const [x,y]=tot(o);return 'لنا '+n2w(x)+'، ولهم '+n2w(y)};
 async function commit(rounds){
   const t=live.target,sa=rounds.reduce((s,x)=>s+x.a,0),sb=rounds.reduce((s,x)=>s+x.b,0);
   const done=(sa>=t||sb>=t)&&sa!==sb;
@@ -364,7 +378,7 @@ db.doc('live/current').onSnapshot(s=>{
   const nl=s.exists?s.data():null;
   if(loaded.l&&nl&&live&&nl.gid===live.gid){
     const n0=(live.rounds||[]).length,n1=(nl.rounds||[]).length;
-    if(nl.finished&&!live.finished){const [x,y]=tot(nl);speak(nl.win==='A'?'مبروك، الصكة لنا، '+x+' مقابل '+y:'الصكة لهم، '+y+' مقابل '+x)}
+    if(nl.finished&&!live.finished){const [x,y]=tot(nl);speak(nl.win==='A'?'مبروك، الصكة لنا، '+n2w(x)+' مقابل '+n2w(y):'الصكة لهم، '+n2w(y)+' مقابل '+n2w(x))}
     else if(n1>n0&&!nl.finished)speak(say(nl));
   }
   if(!(nl&&nl.finished&&live&&nl.gid===live.gid))nextSetup=false;
